@@ -1,36 +1,184 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# DocuChat
 
-## Getting Started
+A powerful document chat application that allows users to upload PDFs and have interactive conversations about their content using advanced AI technology.
 
-First, run the development server:
+## Overview
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+DocuChat is a RAG (Retrieval Augmented Generation) application that combines document processing, vector storage, and AI language models to enable intelligent document-based conversations. Users can upload PDF documents and ask questions about their content, receiving accurate responses based on the document's information.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Architecture
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The application uses a modern tech stack with several key components:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### AI and Language Models
 
-## Learn More
+- **Anthropic Claude (via @langchain/anthropic)**
+  - Primary Large Language Model (LLM) for generating responses
+  - Handles natural language understanding and generation
+  - Provides contextual, accurate answers based on retrieved document segments
+  - Requires API key configuration in .env file
 
-To learn more about Next.js, take a look at the following resources:
+- **Cohere (via @langchain/cohere)**
+  - Handles document and query embedding generation
+  - Converts text into high-dimensional vectors
+  - Free to use for embeddings
+  - Optimized for semantic search and similarity matching
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Vector Database
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Chroma (via chromadb)**
+  - Vector database for storing document embeddings
+  - Runs as a separate Docker container
+  - Enables efficient similarity search
+  - Maintains relationships between document chunks and their vectors
+  - Persists data between application restarts
+  - Accessible via HTTP API (default: <http://localhost:8000>)
 
-## Deploy on Vercel
+### Document Processing
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **pdf-parse**
+  - Extracts text content from PDF files
+  - Maintains formatting and structure
+  - Enables processing of multi-page documents
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Framework and Integration
+
+- **LangChain (via langchain)**
+  - Core framework orchestrating all components
+  - Provides document loaders and text splitters
+  - Manages chains and prompts
+  - Handles integration between components
+  - Includes:
+    - Document loading and parsing
+    - Text chunking and processing
+    - Vector store operations
+    - LLM chain management
+    - Response generation
+
+- **@langchain/community**
+  - Provides additional integrations and tools
+  - Includes Chroma vector store integration
+  - Contains various document loaders and text splitters
+
+## Features
+
+- **Document Upload**
+  - Support for PDF documents
+  - Automatic text extraction
+  - Intelligent chunking for optimal processing
+  - Progress tracking and status updates
+
+- **Vector Storage**
+  - Automatic document vectorization
+  - Efficient similarity search
+  - Persistent storage of embeddings
+  - Reindexing capabilities
+
+- **Interactive Chat**
+  - Natural language question answering
+  - Context-aware responses
+  - Real-time processing
+  - Accurate information retrieval
+
+## Technical Workflow
+
+1. **Document Processing**
+   - PDF upload to public/documents/
+   - Text extraction using pdf-parse
+   - Content splitting into manageable chunks
+   - Metadata extraction and storage
+
+2. **Vector Processing**
+   - Chunk vectorization using Cohere
+   - Vector storage in Chroma database
+   - Metadata association with vectors
+   - Index management
+
+3. **Query Processing**
+   - Question vectorization
+   - Similarity search in vector database
+   - Context retrieval
+   - Answer generation using Claude
+
+4. **Maintenance Operations**
+   - Reindexing capability for database updates
+   - Document management
+   - Vector store optimization
+
+## Setup and Configuration
+
+1. **Environment Setup**
+   Copy .env.example to .env and configure:
+
+   ```sh
+   COHERE_API_KEY=your_api_key
+   ANTHROPIC_API_KEY=your_anthropic_key_here
+   CHROMA_URL=http://localhost:8000
+   ```
+
+2. **Vector Database**
+   Start the Chroma vector database:
+
+   ```sh
+   docker run -p 8000:8000 chromadb/chroma
+   ```
+
+3. **Application**
+   Start the development server:
+
+   ```sh
+   npm run dev
+   ```
+
+## Usage
+
+1. **Document Upload**
+   - Use the upload interface to select PDF files
+   - Wait for processing completion
+   - View document statistics (pages, chunks)
+
+2. **Document Chat**
+   - Enter questions about uploaded documents
+   - Receive AI-generated responses
+   - View source context for answers
+
+3. **Maintenance**
+   - Use reindex function if needed
+   - Monitor document processing status
+   - Manage uploaded documents
+
+## Technical Requirements
+
+- Node.js
+- Docker (for Chroma vector database)
+- Anthropic API key
+- Cohere API key
+- Modern web browser
+- Internet connection (for API access)
+
+## Data Management and Cleanup
+
+### Document Storage
+- PDF files are stored in `public/documents/` directory
+- Each file maintains its original name and format
+- Files can be manually deleted from this directory when no longer needed
+
+### Vector Database
+- Document embeddings are stored in Chroma vector database
+- Data persists between application restarts
+- To clear the vector database:
+  1. Stop the Chroma container
+  2. Remove the container: `docker rm chromadb`
+  3. Restart with a fresh instance: `docker run -p 8000:8000 chromadb/chroma`
+
+### Complete Cleanup
+To completely reset the application:
+1. Delete all files in `public/documents/` directory
+2. Reset the vector database (steps above)
+3. Restart the application
+
+### Maintenance Tips
+- Regularly backup important documents
+- Use the reindex function after manual file deletions
+- Monitor disk space usage in `public/documents/`
+- Check Chroma database health periodically
