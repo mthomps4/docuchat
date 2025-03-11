@@ -1,7 +1,6 @@
 "use server";
 
 import { generateAnswer } from "./chat-service";
-import { processDocument, reindexDocuments } from "./document-service";
 import { writeFile } from "fs/promises";
 import path from "path";
 import { DOCUMENTS_DIR } from "./constants";

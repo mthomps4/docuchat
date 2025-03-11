@@ -6,18 +6,11 @@ import { Chroma } from "@langchain/community/vectorstores/chroma";
 import { Document } from "@langchain/core/documents";
 // import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 
-// Create an adapter for the embeddings to match Chroma's interface
+// Create embeddings instance
 const cohereEmbeddings = new CohereEmbeddings({
   apiKey: process.env.COHERE_API_KEY,
   model: "embed-english-v3.0",
 });
-
-// Adapter to match Chroma's IEmbeddingFunction interface
-const embeddingFunction = {
-  generate: async (texts: string[]) => {
-    return await cohereEmbeddings.embedDocuments(texts);
-  },
-};
 
 // Initialize Chroma client
 const chromaClient = new ChromaClient({
@@ -25,16 +18,19 @@ const chromaClient = new ChromaClient({
 });
 const collectionName = "document_collection";
 
+interface IEmbeddingFunction {
+  generate: (texts: string[]) => Promise<number[][]>;
+}
+
 // Ensure collection exists
 export async function initVectorStore(): Promise<void> {
   try {
     const collections = await chromaClient.listCollections();
-    const collectionExists = collections.some(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (col: any) => col.name === collectionName
-    );
+    const exists = collections
+      .map((c) => (c as unknown as { name: string }).name)
+      .includes(collectionName);
 
-    if (!collectionExists) {
+    if (!exists) {
       await chromaClient.createCollection({ name: collectionName });
       console.log("Collection created successfully");
     } else {
@@ -76,18 +72,26 @@ export async function reindexAllDocuments(
   try {
     // Delete existing collection if it exists
     const collections = await chromaClient.listCollections();
-    const collectionExists = collections.some(
-      (col: any) => col.name === collectionName
-    );
+    const exists = collections
+      .map((c) => (c as unknown as { name: string }).name)
+      .includes(collectionName);
 
-    if (collectionExists) {
+    if (exists) {
       try {
         await chromaClient.deleteCollection({ name: collectionName });
         console.log("Deleted existing collection");
-      } catch (error) {
+      } catch {
         console.log("Collection deletion failed, attempting to reset");
+
+        const embeddingFunction: IEmbeddingFunction = {
+          generate: async (texts: string[]) => {
+            return await cohereEmbeddings.embedDocuments(texts);
+          },
+        };
+
         const collection = await chromaClient.getCollection({
           name: collectionName,
+          embeddingFunction,
         });
         await collection.delete();
       }

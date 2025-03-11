@@ -2,6 +2,7 @@ import { ChatAnthropic } from "@langchain/anthropic";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { queryVectorStore } from "./vector-store";
+import { BaseMessage } from "@langchain/core/messages";
 
 interface Source {
   content: string;
@@ -17,6 +18,11 @@ interface ChatResponse {
   answer: string;
   sources?: Source[];
   error?: string;
+}
+
+// Helper function to convert message content to string
+function messageToString(message: BaseMessage): string {
+  return message.content.toString();
 }
 
 export async function generateAnswer(query: string): Promise<ChatResponse> {
@@ -76,6 +82,9 @@ Answer:`);
       question: query,
     });
 
+    // Convert response to string
+    const answerText = messageToString(response);
+
     // Prepare sources for citation
     const sources = relevantDocs.map((doc) => ({
       content: doc.pageContent.substring(0, 150) + "...",
@@ -88,7 +97,7 @@ Answer:`);
     }));
 
     return {
-      answer: response.content,
+      answer: answerText,
       sources,
     };
   } catch (error) {

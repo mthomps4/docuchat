@@ -11,6 +11,7 @@ interface UploadStatus {
     pageCount?: number;
     chunkCount?: number;
     documentCount?: number;
+    message?: string;
   };
 }
 
@@ -81,7 +82,7 @@ export default function AdminPanel(): React.ReactElement {
       const response = await handleReindex();
 
       if (!response.success) {
-        throw new Error(response.error || "Failed to reindex documents");
+        throw new Error("Failed to reindex documents");
       }
 
       console.log("Reindex response:", { response });
